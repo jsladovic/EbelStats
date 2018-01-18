@@ -74,7 +74,7 @@ class Graph:
             self.legendTexts[club].set_alpha(1.0)
             self.legendLines[club].set_alpha(1.0)
         else:
-            self.legendTexts[club].set_alpha(0.2)
+            self.legendTexts[club].set_alpha(0.3)
             self.legendLines[club].set_alpha(0.2)
 
     def allLinesVisible(self):

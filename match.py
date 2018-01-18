@@ -4,6 +4,18 @@ class Match():
     def __init__(self):
         self.homeScore = None
         self.awayScore = None
+
+    def won(self, club):
+        if self.homeName == club and self.homeScore > self.awayScore:
+            return True
+        if self.awayName == club and self.homeScore < self.awayScore:
+            return True
+        return False
+
+    def wonPoint(self, club):
+        if self.won(club) or self.overtime != None:
+            return True
+        return False
     
     def fromDictionary(self, dictionary):
         self.idLong = dictionary['idLong']

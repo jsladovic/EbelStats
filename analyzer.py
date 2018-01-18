@@ -1,9 +1,12 @@
 from datetime import datetime
 from crawler import EbelScheduleCrawler
+from score import TeamScore
+from score import Streak
 from match import Match
 from graph import Graph
 from tabulate import tabulate
 import json
+
 
 class Analyzer():
     def getData(self):
@@ -35,6 +38,8 @@ class Analyzer():
         self.printTable(table)
 
         positions = sorted(positions.iteritems(), key = lambda (k,v): self.findPositionInTable(table, k))
+        self.findLongestStreak(finishedMatches, clubs)
+        
         Graph().displayPositions(positions)
 
     def findPositionInTable(self, table, clubName):
@@ -48,7 +53,7 @@ class Analyzer():
         clubs = {match.homeName for match in matches}
         table = []
         for club in clubs:
-            clubMatches = [match for match in matches if match.homeName == club or match.awayName == club]
+            clubMatches = self.matchesForClub(matches, club)
             score = TeamScore(club)
             for match in clubMatches:
                 if matchLimit != None and score.gamesPlayed >= matchLimit:
@@ -85,66 +90,26 @@ class Analyzer():
             matches.append(match)
         return matches
 
-class TeamScore():
-    def __init__(self, name):
-        self.name = name
-        self.gamesPlayed = 0
-        self.wins = 0
-        self.losses = 0
-        self.otWins = 0
-        self.otLosses = 0
-        self.goalsFor = 0
-        self.goalsAgainst = 0
+    def findLongestStreak(self, matches, clubs):
+        print('Longest winning streak:')
+        for club in clubs:
+            streak = None
+            longestStreak = None
+            clubMatches = self.matchesForClub(matches, club)
+            for match in range (0, len(clubMatches) - 1):
+                if clubMatches[match].won(club):
+                    if streak == None:
+                        streak = Streak(club, match + 1)
+                    else:
+                        streak.extend()
+                        
+                    if longestStreak == None or streak.length() > longestStreak.length():
+                        longestStreak = streak
+                else:
+                    streak = None
+            longestStreak.printStreak()
 
-    def addHomeGame(self, match):
-        if match.homeScore == match.awayScore:
-            raise Exception('match must have a winner')
-
-        self.gamesPlayed += 1
-        self.goalsFor += match.homeScore
-        self.goalsAgainst += match.awayScore
-        if match.homeScore > match.awayScore:
-            if match.wentToOvertime():
-                self.otWins += 1
-            else:
-                self.wins += 1
-        else:
-            if match.wentToOvertime():
-                self.otLosses += 1
-            else:
-                self.losses += 1
-
-    def addAwayGame(self, match):
-        if match.homeScore == match.awayScore:
-            raise Exception('match must have a winner')
-
-        self.gamesPlayed += 1
-        self.goalsFor += match.awayScore
-        self.goalsAgainst += match.homeScore
-        if match.awayScore > match.homeScore:
-            if match.wentToOvertime():
-                self.otWins += 1
-            else:
-                self.wins += 1
-        else:
-            if match.wentToOvertime():
-                self.otLosses += 1
-            else:
-                self.losses += 1
-
-    def calculatePoints(self):
-        win = 3
-        otWin = 2
-        otLoss = 1
-        loss = 0
-
-        return self.wins * win + self.otWins * otWin + self.otLosses * otLoss + self.losses * loss
-
-    def goalDifference(self):
-        return self.goalsFor - self.goalsAgainst
-
-    def format(self, position):
-        return [position, self.name, self.gamesPlayed, self.wins, self.losses, self.otWins, self.otLosses,
-                self.goalsFor, self.goalsAgainst, self.goalDifference(), self.calculatePoints()]
+    def matchesForClub(self, matches, club):
+        return [match for match in matches if match.homeName == club or match.awayName == club]
 
 Analyzer().getData()

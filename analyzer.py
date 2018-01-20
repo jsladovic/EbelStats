@@ -38,7 +38,18 @@ class Analyzer():
         self.printTable(table)
 
         positions = sorted(positions.iteritems(), key = lambda (k,v): self.findPositionInTable(table, k))
-        self.findLongestStreak(finishedMatches, clubs)
+
+        print('\nLongest winning streaks')
+        self.findLongestStreak(finishedMatches, clubs, Match.won)
+
+        print('\nLongest losing streaks')
+        self.findLongestStreak(finishedMatches, clubs, Match.lost)
+
+        print('\nLongest point streaks')
+        self.findLongestStreak(finishedMatches, clubs, Match.wonPoint)
+
+        print('\nLongest pointless streaks')
+        self.findLongestStreak(finishedMatches, clubs, Match.didNotWinPoint)
         
         Graph().displayPositions(positions)
 
@@ -90,14 +101,15 @@ class Analyzer():
             matches.append(match)
         return matches
 
-    def findLongestStreak(self, matches, clubs):
-        print('Longest winning streak:')
+    def findLongestStreak(self, matches, clubs, function):
+        longestStreaks = []
+        print('\nBy club:')
         for club in clubs:
             streak = None
             longestStreak = None
             clubMatches = self.matchesForClub(matches, club)
             for match in range (0, len(clubMatches) - 1):
-                if clubMatches[match].won(club):
+                if function(clubMatches[match], club):
                     if streak == None:
                         streak = Streak(club, match + 1)
                     else:
@@ -106,8 +118,24 @@ class Analyzer():
                     if longestStreak == None or streak.length() > longestStreak.length():
                         longestStreak = streak
                 else:
+                    longestStreaks = self.addStreakToLongestStreaks(longestStreaks, streak)
                     streak = None
-            longestStreak.printStreak()
+            longestStreaks = self.addStreakToLongestStreaks(longestStreaks, streak)
+            print(longestStreak.toString())
+
+        print('\nOverall:')
+        for i in range(0, len(longestStreaks)):
+            print(str(i + 1) + '. ' + longestStreaks[i].toString())
+
+    def addStreakToLongestStreaks(self, streaks, streak):
+        numberOfStreaks = 10
+        if streak == None:
+            return streaks
+        if len(streaks) < numberOfStreaks or streak.length() > streaks[numberOfStreaks - 1].length():
+            streaks.append(streak)
+            streaks = sorted(streaks, key = lambda s: s.length(), reverse = True)
+            return streaks[:numberOfStreaks]
+        return streaks
 
     def matchesForClub(self, matches, club):
         return [match for match in matches if match.homeName == club or match.awayName == club]

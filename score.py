@@ -73,6 +73,5 @@ class Streak:
     def length(self):
         return self.endingMatch - self.startingMatch + 1
 
-    def printStreak(self):
-        print(self.club + ' -> games ' + str(self.startingMatch) + ' to '
-              + str(self.endingMatch) + '(' + str(self.length()) + ')')
+    def toString(self):
+        return self.club + ' -> games ' + str(self.startingMatch) + ' to ' + str(self.endingMatch) + '(' + str(self.length()) + ')'

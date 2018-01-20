@@ -12,10 +12,16 @@ class Match():
             return True
         return False
 
+    def lost(self, club):
+        return not self.won(club)
+
     def wonPoint(self, club):
         if self.won(club) or self.overtime != None:
             return True
         return False
+
+    def didNotWinPoint(self, club):
+        return not self.wonPoint(club)
     
     def fromDictionary(self, dictionary):
         self.idLong = dictionary['idLong']

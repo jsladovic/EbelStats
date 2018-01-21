@@ -3,20 +3,24 @@ import matplotlib.lines as matLines
 import matplotlib.text as matText
 
 class Graph:
-    def displayPositions(self, tupple):
+    def displayPositions(self, tupple, numberOfMatches):
         plt.rcParams['toolbar'] = 'None'
         self.fig = plt.figure(figsize=(12, 5), dpi=100)
         plt.subplots_adjust(left=0.05, right=0.8, top = 0.95, bottom=0.1)
-        plt.axis([1, 44, 12.5, 0.5])
-        plt.xticks([1, 5, 10, 15, 20, 25, 30, 35, 40, 44])
+        plt.axis([1, numberOfMatches, 12.5, 0.5])
         plt.yticks([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12])
+
+        xTicks = [1, numberOfMatches]
+        for i in range(0, numberOfMatches/5):
+            xTicks.append((i + 1) * 5)
+        plt.xticks(xTicks)
 
         self.lines = {}
         self.legendLines = {}
         self.legendTexts = {}
         for club, positions in tupple:
             points = []
-            for i in range(0, 44):
+            for i in range(0, numberOfMatches):
                 if i >= len(positions):
                     break
                 points.append(i + 1)

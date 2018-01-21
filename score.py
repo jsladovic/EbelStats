@@ -1,3 +1,5 @@
+from match import Match
+
 class TeamScore():
     def __init__(self, name):
         self.name = name
@@ -46,13 +48,8 @@ class TeamScore():
                 self.losses += 1
 
     def calculatePoints(self):
-        # Number of points awarded for result
-        win = 3
-        otWin = 2
-        otLoss = 1
-        loss = 0
 
-        return self.wins * win + self.otWins * otWin + self.otLosses * otLoss + self.losses * loss
+        return self.wins * Match.win + self.otWins * Match.otWin + self.otLosses * Match.otLoss + self.losses * Match.loss
 
     def goalDifference(self):
         return self.goalsFor - self.goalsAgainst
@@ -75,3 +72,57 @@ class Streak:
 
     def toString(self):
         return self.club + ' -> games ' + str(self.startingMatch) + ' to ' + str(self.endingMatch) + '(' + str(self.length()) + ')'
+
+class HeadToHead:
+    def __init__(self, club1, club2, matches):
+        self.clubs = [club1, club2]
+        self.matches = matches
+
+    def maxNumberOfPoints(self):
+        return len(self.matches) * Match.maxPointsWon()
+
+    def winnerPointsWon(self):
+        club1PointsWon = 0
+        for match in self.matches:
+            club1PointsWon += match.numberOfPointsWon(self.clubs[0])
+
+        if club1PointsWon >= self.maxNumberOfPoints() - club1PointsWon:
+            return club1PointsWon
+        return self.maxNumberOfPoints() - club1PointsWon
+
+    def winnerLoser(self):
+        club1PointsWon = 0
+        for match in self.matches:
+            club1PointsWon += match.numberOfPointsWon(self.clubs[0])
+
+        if club1PointsWon >= self.maxNumberOfPoints() - club1PointsWon:
+            return self.clubs[0], self.clubs[1]
+        return self.clubs[1], self.clubs[0]
+
+    def hasNoMatches(self):
+        return self.matches == None or len(self.matches) == 0
+
+    def percentage(self):
+        if self.hasNoMatches():
+            return 0.0
+        return self.winnerPointsWon() / float(self.maxNumberOfPoints())
+
+    def toString(self):
+        if self.hasNoMatches():
+            return self.clubs[0] + ' and ' + self.clubs[1] + ' haven\' played yet'
+        if self.percentage() == 0.5:
+            return self.clubs[0] + ' and ' + self.clubs[1] + ' split the series, both winning ' + str(self.winnerPointsWon()) + ' points'
+        winner, loser = self.winnerLoser()
+        return winner + ' won ' + str(self.winnerPointsWon()) + ' out of ' + str(self.maxNumberOfPoints()) + ' against ' + loser + ' (' + str(round(self.percentage() * 100, 1)) + '%)'
+
+    def hasClub(self, club):
+        if club in self.clubs:
+            return True
+        return False
+
+    def otherClub(self, club):
+        if club not in self.clubs:
+            raise Exception('club not in head to head clubs')
+        if club == self.clubs[0]:
+            return self.clubs[1]
+        return self.clubs[0]

@@ -1,5 +1,6 @@
 from datetime import datetime
 from crawler import EbelScheduleCrawler
+from score import HeadToHead
 from score import TeamScore
 from score import Streak
 from match import Match
@@ -9,7 +10,7 @@ import json
 
 
 class Analyzer():
-    def getData(self):
+    def getData(self, function, numberOfMatches, findHeadToHead):
         cacheFileName = 'cache/ebel_schedule_' + datetime.today().strftime('%d_%m_%Y') + '.json'
         matches = []
         try:
@@ -22,14 +23,14 @@ class Analyzer():
         finishedMatches = [match for match in matches if match.isFinished()]
         finishedMatches = sorted(finishedMatches, key = lambda match: match.date)
 
-        table = self.createTable(finishedMatches, 1)
+        table = self.createTable(finishedMatches, function, 1)
         clubs = {club.name for club in table}
         positions = {}
         for club in clubs:
             positions[club] = []
 
         for i in range(2, 44):
-            table = self.createTable(finishedMatches, i)
+            table = self.createTable(finishedMatches, function, i)
             for club in clubs:
                 position = self.findPositionInTable(table, club)
                 if i > table[position - 1].gamesPlayed:
@@ -37,21 +38,62 @@ class Analyzer():
                 positions[club].append(position)
         self.printTable(table)
 
-        positions = sorted(positions.iteritems(), key = lambda (k,v): self.findPositionInTable(table, k))
+        self.printGraphs(table, positions, numberOfMatches)        
+        self.printLongestStreaks(finishedMatches, clubs, function)
+        if findHeadToHead:
+            self.printHeadToHeadScores(list(clubs), finishedMatches)
 
+    def printHeadToHeadScores(self, clubs, matches):
+        headToHeads = []
+        for i in range(0, len(clubs) - 1):
+            for j in range(i + 1, len(clubs)):
+                matchesForClubs = self.matchesForClub(self.matchesForClub(matches, clubs[i]), clubs[j])
+                headToHead = HeadToHead(clubs[i], clubs[j], matchesForClubs)
+                headToHeads.append(headToHead)
+
+        self.printBestHeadToHeads(headToHeads)
+        self.printSplitSeries(clubs, headToHeads)
+
+    def printBestHeadToHeads(self, headToHeads):
+        headToHeads = sorted(headToHeads, key = lambda h2h: h2h.percentage(), reverse = True)
+        print('\nBest head to head scores:')
+        for headToHead in [h2h for h2h in headToHeads if h2h.percentage() >= 0.8]:
+            print(headToHead.toString())
+
+    def printSplitSeries(self, clubs, headToHeads):
+        print('\nTeams that have split their series:')
+        for club in clubs:
+            splitSeries = [h2h for h2h in headToHeads if h2h.hasClub(club) and h2h.percentage() == 0.5]
+            print(self.splitSeriesToString(club, splitSeries))
+
+    def splitSeriesToString(self, club, splitSeries):
+        if splitSeries == None or len(splitSeries) == 0:
+            return club + ' didn\'t split any series'
+        return club + ' split ' + str(len(splitSeries)) + ' series, against ' + self.otherClubsToString(club, splitSeries)
+
+    def otherClubsToString(self, club, splitSeries):
+        string = splitSeries[0].otherClub(club)
+        for i in range(1, len(splitSeries)):
+            string += ', ' + splitSeries[i].otherClub(club)
+        return string
+
+    def printLongestStreaks(self, finishedMatches, clubs, function):
         print('\nLongest winning streaks')
-        self.findLongestStreak(finishedMatches, clubs, Match.won)
+        self.findLongestStreak(finishedMatches, clubs, Match.won, function)
 
         print('\nLongest losing streaks')
-        self.findLongestStreak(finishedMatches, clubs, Match.lost)
+        self.findLongestStreak(finishedMatches, clubs, Match.lost, function)
 
         print('\nLongest point streaks')
-        self.findLongestStreak(finishedMatches, clubs, Match.wonPoint)
+        self.findLongestStreak(finishedMatches, clubs, Match.wonPoint, function)
 
         print('\nLongest pointless streaks')
-        self.findLongestStreak(finishedMatches, clubs, Match.didNotWinPoint)
-        
-        Graph().displayPositions(positions)
+        self.findLongestStreak(finishedMatches, clubs, Match.didNotWinPoint, function)
+
+    def printGraphs(self, table, positions, numberOfMatches):
+        positions = sorted(positions.iteritems(), key = lambda (k,v): self.findPositionInTable(table, k))
+        Graph().displayPositions(positions, numberOfMatches)
+        return
 
     def findPositionInTable(self, table, clubName):
         position = 1
@@ -60,11 +102,11 @@ class Analyzer():
                 return position
             position += 1
 
-    def createTable(self, matches, matchLimit = None):
+    def createTable(self, matches, function, matchLimit = None):
         clubs = {match.homeName for match in matches}
         table = []
         for club in clubs:
-            clubMatches = self.matchesForClub(matches, club)
+            clubMatches = function(self, matches, club)
             score = TeamScore(club)
             for match in clubMatches:
                 if matchLimit != None and score.gamesPlayed >= matchLimit:
@@ -101,13 +143,13 @@ class Analyzer():
             matches.append(match)
         return matches
 
-    def findLongestStreak(self, matches, clubs, function):
+    def findLongestStreak(self, matches, clubs, function, matchesFunction):
         longestStreaks = []
         print('\nBy club:')
         for club in clubs:
             streak = None
             longestStreak = None
-            clubMatches = self.matchesForClub(matches, club)
+            clubMatches = matchesFunction(self, matches, club)
             for match in range (0, len(clubMatches) - 1):
                 if function(clubMatches[match], club):
                     if streak == None:
@@ -140,4 +182,17 @@ class Analyzer():
     def matchesForClub(self, matches, club):
         return [match for match in matches if match.homeName == club or match.awayName == club]
 
-Analyzer().getData()
+    def homeMatchesForClub(self, matches, club):
+        return [match for match in matches if match.homeName == club]
+
+    def awayMatchesForClub(self, matches, club):
+        return [match for match in matches if match.awayName == club]
+
+print('\nOverall table')
+Analyzer().getData(Analyzer.matchesForClub, 44, True)
+
+print('\nHome table')
+Analyzer().getData(Analyzer.homeMatchesForClub, 22, False)
+
+print('\nAway table')
+Analyzer().getData(Analyzer.awayMatchesForClub, 22, False)

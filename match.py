@@ -1,9 +1,28 @@
 from datetime import datetime
 
 class Match():
+    # Number of points awarded for result
+    win = 3
+    otWin = 2
+    otLoss = 1
+    loss = 0
+    
     def __init__(self):
         self.homeScore = None
         self.awayScore = None
+
+    @staticmethod
+    def maxPointsWon():
+        return Match.win
+
+    def numberOfPointsWon(self, club):
+        if self.won(club):
+            if self.overtime == None:
+                return self.win
+            return self.otWin
+        if self.wonPoint(club):
+            return self.otLoss
+        return self.loss
 
     def won(self, club):
         if self.homeName == club and self.homeScore > self.awayScore:

@@ -4,12 +4,14 @@ class Match():
     # Number of points awarded for result
     win = 3
     otWin = 2
+    draw = 1
     otLoss = 1
     loss = 0
     
     def __init__(self):
         self.homeScore = None
         self.awayScore = None
+        self.details = Details()
 
     @staticmethod
     def maxPointsWon():
@@ -111,3 +113,16 @@ class Match():
         if self.isFinished():
             return 'score ' + str(self.homeScore) + ':' + str(self.awayScore) + self.overtimeToString()
         return 'match hasn\'t been played yet'
+
+    def setPeriodDetails(self, periods):
+        if not self.wentToOvertime():
+            periods = periods[:3]
+        self.details.goalsByPeriod = [n[0] for n in periods]
+        self.details.shotsByPeriod = [n[1] for n in periods]
+        if sum([n[0] for n in self.details.goalsByPeriod]) != self.homeScore or sum([n[1] for n in self.details.goalsByPeriod]) != self.awayScore:
+            raise 'incorrect sum of goals by period'
+
+class Details():
+    def __init__(self):
+        self.goalsByPeriod = None
+        self.shotsByPeriod = None

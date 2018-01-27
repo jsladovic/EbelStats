@@ -1,5 +1,7 @@
 from datetime import datetime
 from crawler import EbelScheduleCrawler
+from matchCrawler import EbelMatchCrawler
+from browser import Browser
 from score import HeadToHead
 from score import TeamScore
 from score import Streak
@@ -10,6 +12,9 @@ import json
 
 
 class Analyzer():
+    def __init__(self):
+        self.browser = None
+        
     def getData(self, function, numberOfMatches, findHeadToHead):
         cacheFileName = 'cache/ebel_schedule_' + datetime.today().strftime('%d_%m_%Y') + '.json'
         matches = []
@@ -18,10 +23,27 @@ class Analyzer():
             text = f.read()
             matches = self.deserializeMatches(text)
         except:
-            matches = EbelScheduleCrawler(cacheFileName).parse()
+            matches = EbelScheduleCrawler(cacheFileName).parse(self.getBrowser())
 
         finishedMatches = [match for match in matches if match.isFinished()]
         finishedMatches = sorted(finishedMatches, key = lambda match: match.date)
+
+        didOne = False
+        for match in finishedMatches:
+            cacheFileName = 'cache/match/match/' + match.idLong + '.json'
+            try:
+                f = open(cacheFileName, 'r')
+                text = t.read()
+                match.details = self.deserializeMatchDetails(text)
+            except:
+                EbelMatchCrawler().parse(self.getBrowser(), match, cacheFileName)
+            if didOne:
+                break
+            didOne = True
+        
+
+        self.closeBrowser()
+        return
 
         table = self.createTable(finishedMatches, function, 1)
         clubs = {club.name for club in table}
@@ -188,11 +210,21 @@ class Analyzer():
     def awayMatchesForClub(self, matches, club):
         return [match for match in matches if match.awayName == club]
 
+    def getBrowser(self):
+        if self.browser == None:
+            self.browser = Browser()
+        return self.browser
+
+    def closeBrowser(self):
+        if self.browser != None:
+            self.browser.closeBrowser()
+        self.browser = None
+
 print('\nOverall table')
 Analyzer().getData(Analyzer.matchesForClub, 44, True)
 
-print('\nHome table')
-Analyzer().getData(Analyzer.homeMatchesForClub, 22, False)
+#print('\nHome table')
+#Analyzer().getData(Analyzer.homeMatchesForClub, 22, False)
 
-print('\nAway table')
-Analyzer().getData(Analyzer.awayMatchesForClub, 22, False)
+#print('\nAway table')
+#Analyzer().getData(Analyzer.awayMatchesForClub, 22, False)

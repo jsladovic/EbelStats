@@ -64,33 +64,51 @@ class Analyzer():
 
     def printShotDetails(self, clubs, matches):
         shotSum = dict()
+        wereOutshot = dict()
+        outshotOpposition = dict()
         wonWhileOutshot = dict()
         lostDespiteOutshooting = dict()
         
         for club in clubs:
             shotSum[club] = 0
+            wereOutshot[club] = []
+            outshotOpposition[club] = []
             wonWhileOutshot[club] = []
             lostDespiteOutshooting[club] = []
             
             matchesForClub = self.matchesForClub(matches, club)
             for match in matchesForClub:
                 shotSum[club] += match.shotsForClub(club)
-                if match.won(club) and match.wasOutshot(club):
-                    wonWhileOutshot[club].append(match)
-                if match.lost(club) and match.outshotOpponents(club):
-                    lostDespiteOutshooting[club].append(match)
+                if match.wasOutshot(club):
+                    wereOutshot[club].append(match)
+                    if match.won(club):
+                        wonWhileOutshot[club].append(match)
+                if match.outshotOpponents(club):
+                    outshotOpposition[club].append(match)
+                    if match.lost(club):
+                        lostDespiteOutshooting[club].append(match)
                    
         print('\nMost shots per club:')
         shotSum = sorted(shotSum.iteritems(), key = lambda(k,v) : v, reverse = True)
         for i in range(0, len(shotSum)):
             print(str(i + 1) + '. ' + shotSum[i][0] + ' - ' + str(shotSum[i][1]))
 
+        print('\nTeams that outshot the opposition in most matches:')
+        outshotOpposition = sorted(outshotOpposition.iteritems(), key = lambda(k,v) : len(v), reverse = True)
+        for i in range(0, len(outshotOpposition)):
+            print(str(i + 1) + '. ' + outshotOpposition[i][0] + ' outshot the opposition in ' + str(len(outshotOpposition[i][1])) + ' matches')
+
+        print('\nTeams that were outshot in most matches:')
+        wereOutshot = sorted(wereOutshot.iteritems(), key = lambda(k,v) : len(v), reverse = True)
+        for i in range(0, len(wereOutshot)):
+            print(str(i + 1) + '. ' + wereOutshot[i][0] + ' were outshot in ' + str(len(wereOutshot[i][1])) + ' matches')
+
         print('\nTeams that won the most games despite being outshot:')
         wonWhileOutshot = sorted(wonWhileOutshot.iteritems(), key = lambda(k,v) : len(v), reverse = True)
         for i in range(0, len(wonWhileOutshot)):
             print(str(i + 1) + '. ' + wonWhileOutshot[i][0] + ' won ' + str(len(wonWhileOutshot[i][1])) + ' matches')
 
-        print('\nTeams that lost the most games when they outshot the opposition')
+        print('\nTeams that lost the most games when they outshot the opposition:')
         lostDespiteOutshooting = sorted(lostDespiteOutshooting.iteritems(), key = lambda(k,v) : len(v), reverse = True)
         for i in range(0, len(wonWhileOutshot)):
             print(str(i + 1) + '. ' + lostDespiteOutshooting[i][0] + ' lost ' + str(len(lostDespiteOutshooting[i][1])) + ' matches')

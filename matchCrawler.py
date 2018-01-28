@@ -10,7 +10,7 @@ class EbelMatchCrawler():
     goalsXpath = '//*[@id="los_game_fullreport"]/div/div[4]/div[2]/div[2]'
     penaltiesXpath = '//*[@id="los_game_fullreport"]/div/div[5]'
     
-    def parse(self, browser, match, cacheFileName):
+    def parse(self, browser, match):
         print('match ' + match.idLong)
         browser.getPage(self.getUrl(match.idLong))
         match.setPeriodDetails(self.parseScore(browser.findByXpath(self.scoreXpath)))

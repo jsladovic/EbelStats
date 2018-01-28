@@ -119,10 +119,39 @@ class Match():
             periods = periods[:3]
         self.details.goalsByPeriod = [n[0] for n in periods]
         self.details.shotsByPeriod = [n[1] for n in periods]
-        if sum([n[0] for n in self.details.goalsByPeriod]) != self.homeScore or sum([n[1] for n in self.details.goalsByPeriod]) != self.awayScore:
-            raise 'incorrect sum of goals by period'
+        #if sum([n[0] for n in self.details.goalsByPeriod]) != self.homeScore or sum([n[1] for n in self.details.goalsByPeriod]) != self.awayScore:
+        #    raise 'incorrect sum of goals by period'
+
+    def shotsForClub(self, club):
+        if club == self.homeName:
+            return self.homeShots()
+        return self.awayShots()
+
+    def outshotOpponents(self, club):
+        if club == self.homeName and self.homeShots() > self.awayShots():
+            return True
+        if club == self.awayName and self.awayShots() > self.homeShots():
+            return True
+        return False
+
+    def wasOutshot(self, club):
+        if club == self.homeName and self.homeShots() < self.awayShots():
+            return True
+        if club == self.awayName and self.awayShots() < self.homeShots():
+            return True
+        return False
+
+    def homeShots(self):
+        return sum([n[0] for n in self.details.shotsByPeriod])
+
+    def awayShots(self):
+        return sum([n[1] for n in self.details.shotsByPeriod])
 
 class Details():
     def __init__(self):
         self.goalsByPeriod = None
         self.shotsByPeriod = None
+
+    def fromDictionary(self, dictionary):
+        self.goalsByPeriod = dictionary['goalsByPeriod']
+        self.shotsByPeriod = dictionary['shotsByPeriod']

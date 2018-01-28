@@ -6,6 +6,7 @@ from score import HeadToHead
 from score import TeamScore
 from score import Streak
 from match import Match
+from match import Details
 from graph import Graph
 from tabulate import tabulate
 import json
@@ -28,22 +29,17 @@ class Analyzer():
         finishedMatches = [match for match in matches if match.isFinished()]
         finishedMatches = sorted(finishedMatches, key = lambda match: match.date)
 
-        didOne = False
         for match in finishedMatches:
-            cacheFileName = 'cache/match/match/' + match.idLong + '.json'
+            cacheFileName = 'cache/match/' + match.idLong + '.json'
             try:
                 f = open(cacheFileName, 'r')
-                text = t.read()
+                text = f.read()
                 match.details = self.deserializeMatchDetails(text)
             except:
-                EbelMatchCrawler().parse(self.getBrowser(), match, cacheFileName)
-            if didOne:
-                break
-            didOne = True
-        
-
+                EbelMatchCrawler().parse(self.getBrowser(), match)
+                self.cacheMatchDetails(match, cacheFileName)
+                            
         self.closeBrowser()
-        return
 
         table = self.createTable(finishedMatches, function, 1)
         clubs = {club.name for club in table}
@@ -58,13 +54,47 @@ class Analyzer():
                 if i > table[position - 1].gamesPlayed:
                     continue
                 positions[club].append(position)
-        self.printTable(table)
+        #self.printTable(table)
 
-        self.printGraphs(table, positions, numberOfMatches)        
-        self.printLongestStreaks(finishedMatches, clubs, function)
+        #self.printGraphs(table, positions, numberOfMatches)        
+        #self.printLongestStreaks(finishedMatches, clubs, function)
         if findHeadToHead:
-            self.printHeadToHeadScores(list(clubs), finishedMatches)
+            #self.printHeadToHeadScores(list(clubs), finishedMatches)
+            self.printShotDetails(list(clubs), finishedMatches)
 
+    def printShotDetails(self, clubs, matches):
+        shotSum = dict()
+        wonWhileOutshot = dict()
+        lostDespiteOutshooting = dict()
+        
+        for club in clubs:
+            shotSum[club] = 0
+            wonWhileOutshot[club] = []
+            lostDespiteOutshooting[club] = []
+            
+            matchesForClub = self.matchesForClub(matches, club)
+            for match in matchesForClub:
+                shotSum[club] += match.shotsForClub(club)
+                if match.won(club) and match.wasOutshot(club):
+                    wonWhileOutshot[club].append(match)
+                if match.lost(club) and match.outshotOpponents(club):
+                    lostDespiteOutshooting[club].append(match)
+                   
+        print('\nMost shots per club:')
+        shotSum = sorted(shotSum.iteritems(), key = lambda(k,v) : v, reverse = True)
+        for i in range(0, len(shotSum)):
+            print(str(i + 1) + '. ' + shotSum[i][0] + ' - ' + str(shotSum[i][1]))
+
+        print('\nTeams that won the most games despite being outshot:')
+        wonWhileOutshot = sorted(wonWhileOutshot.iteritems(), key = lambda(k,v) : len(v), reverse = True)
+        for i in range(0, len(wonWhileOutshot)):
+            print(str(i + 1) + '. ' + wonWhileOutshot[i][0] + ' won ' + str(len(wonWhileOutshot[i][1])) + ' matches')
+
+        print('\nTeams that lost the most games when they outshot the opposition')
+        lostDespiteOutshooting = sorted(lostDespiteOutshooting.iteritems(), key = lambda(k,v) : len(v), reverse = True)
+        for i in range(0, len(wonWhileOutshot)):
+            print(str(i + 1) + '. ' + lostDespiteOutshooting[i][0] + ' lost ' + str(len(lostDespiteOutshooting[i][1])) + ' matches')
+            
     def printHeadToHeadScores(self, clubs, matches):
         headToHeads = []
         for i in range(0, len(clubs) - 1):
@@ -165,6 +195,12 @@ class Analyzer():
             matches.append(match)
         return matches
 
+    def deserializeMatchDetails(self, text):
+        dictionary = json.loads(text)
+        details = Details()
+        details.fromDictionary(dictionary)
+        return details
+
     def findLongestStreak(self, matches, clubs, function, matchesFunction):
         longestStreaks = []
         print('\nBy club:')
@@ -220,11 +256,18 @@ class Analyzer():
             self.browser.closeBrowser()
         self.browser = None
 
-print('\nOverall table')
+    def cacheMatchDetails(self, match, cacheFileName):
+        matchJson = json.dumps(match.details.__dict__)
+
+        with open(cacheFileName, 'w') as f:
+            f.write(matchJson)
+            f.close
+
+print('\nOverall stats')
 Analyzer().getData(Analyzer.matchesForClub, 44, True)
 
-#print('\nHome table')
+#print('\nHome stats')
 #Analyzer().getData(Analyzer.homeMatchesForClub, 22, False)
 
-#print('\nAway table')
+#print('\nAway stats')
 #Analyzer().getData(Analyzer.awayMatchesForClub, 22, False)

@@ -1,11 +1,14 @@
 from selenium import webdriver
 from datetime import datetime
 from match import Match
+from match import Details
 import json
 
 def serializeJson(obj):
     if isinstance(obj, (datetime)):
         return obj.isoformat()
+    if isinstance(obj, (Details)):
+        return None
     raise TypeError ("Type %s not serializable" % type(obj))
 
 class EbelScheduleCrawler():

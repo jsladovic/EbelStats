@@ -14,6 +14,9 @@ def serializeJson(obj):
 class EbelScheduleCrawler():
     url = 'http://www.erstebankliga.at/spielplan'
     tableXpath = '//*[@id="los_schedule"]/div/div/div[2]/table/tbody/tr'
+
+    # to be used when selecting different schedules
+    dropdownXpath = '//*[@id="los_option_division_id"]'
     
     def __init__(self, cacheFileName):
         self.cacheFileName = cacheFileName

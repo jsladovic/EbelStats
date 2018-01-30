@@ -17,14 +17,20 @@ class Analyzer():
         self.browser = None
         
     def getData(self, function, numberOfMatches, findHeadToHead):
+        cacheCompleteScheduleName = 'cache/ebel_schedule_complete.json'
         cacheFileName = 'cache/ebel_schedule_' + datetime.today().strftime('%d_%m_%Y') + '.json'
         matches = []
         try:
-            f = open(cacheFileName, 'r')
+            f = open(cacheCompleteScheduleName, 'r')
             text = f.read()
             matches = self.deserializeMatches(text)
         except:
-            matches = EbelScheduleCrawler(cacheFileName).parse(self.getBrowser())
+            try:
+                f = open(cacheFileName, 'r')
+                text = f.read()
+                matches = self.deserializeMatches(text)
+            except:
+                matches = EbelScheduleCrawler(cacheFileName).parse(self.getBrowser())
 
         finishedMatches = [match for match in matches if match.isFinished()]
         finishedMatches = sorted(finishedMatches, key = lambda match: match.date)
@@ -47,19 +53,19 @@ class Analyzer():
         for club in clubs:
             positions[club] = []
 
-        for i in range(2, 44):
+        for i in range(2, 45):
             table = self.createTable(finishedMatches, function, i)
             for club in clubs:
                 position = self.findPositionInTable(table, club)
                 if i > table[position - 1].gamesPlayed:
                     continue
                 positions[club].append(position)
-        #self.printTable(table)
+        self.printTable(table)
 
-        #self.printGraphs(table, positions, numberOfMatches)        
-        #self.printLongestStreaks(finishedMatches, clubs, function)
+        self.printGraphs(table, positions, numberOfMatches)        
+        self.printLongestStreaks(finishedMatches, clubs, function)
         if findHeadToHead:
-            #self.printHeadToHeadScores(list(clubs), finishedMatches)
+            self.printHeadToHeadScores(list(clubs), finishedMatches)
             self.printShotDetails(list(clubs), finishedMatches)
 
     def printShotDetails(self, clubs, matches):

@@ -34,10 +34,19 @@ class Match():
         return False
 
     def lost(self, club):
-        return not self.won(club)
+        if self.homeName == club and self.homeScore < self.awayScore:
+            return True
+        if self.awayName == club and self.homeScore > self.awayScore:
+            return True
+        return False
+
+    def drawn(self, club):
+        if self.homeScore == self.awayScore:
+            return True
+        return False
 
     def wonPoint(self, club):
-        if self.won(club) or self.overtime != None:
+        if self.won(club) or self.overtime != None or self.drawn(club):
             return True
         return False
 

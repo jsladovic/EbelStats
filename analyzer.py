@@ -47,26 +47,16 @@ class Analyzer():
                             
         self.closeBrowser()
 
-        table = self.createTable(finishedMatches, function, 1)
-        clubs = {club.name for club in table}
-        positions = {}
-        for club in clubs:
-            positions[club] = []
-
-        for i in range(2, 45):
-            table = self.createTable(finishedMatches, function, i)
-            for club in clubs:
-                position = self.findPositionInTable(table, club)
-                if i > table[position - 1].gamesPlayed:
-                    continue
-                positions[club].append(position)
-        self.printTable(table)
-
-        self.printGraphs(table, positions, numberOfMatches)        
-        self.printLongestStreaks(finishedMatches, clubs, function)
+        table, positions, clubs = self.createTable(finishedMatches, function)
+        #self.printGraphs(table, positions, numberOfMatches)        
+        #self.printLongestStreaks(finishedMatches, clubs, function)
+        
         if findHeadToHead:
-            self.printHeadToHeadScores(list(clubs), finishedMatches)
-            self.printShotDetails(list(clubs), finishedMatches)
+            #self.printHeadToHeadScores(list(clubs), finishedMatches)
+            #self.printShotDetails(list(clubs), finishedMatches)
+            for i in range(0, 3):
+                print('\nTable for period ' + str(i + 1) + '/3:')
+                self.createTable(finishedMatches, function, i)
 
     def printShotDetails(self, clubs, matches):
         shotSum = dict()
@@ -178,7 +168,27 @@ class Analyzer():
                 return position
             position += 1
 
-    def createTable(self, matches, function, matchLimit = None):
+    def createTable(self, matches, function, period = None):
+        table = self.createTableForMatches(matches, function, 1, period)
+        clubs = {club.name for club in table}
+        positions = {}
+        for club in clubs:
+            positions[club] = []
+
+        for i in range(2, 45):
+            table = self.createTableForMatches(matches, function, i, period)
+            for club in clubs:
+                position = self.findPositionInTable(table, club)
+                if i > table[position - 1].gamesPlayed:
+                    continue
+                positions[club].append(position)
+        if period == None:
+            self.printTable(table)
+        else:
+            self.printTableShort(table)
+        return table, positions, clubs
+
+    def createTableForMatches(self, matches, function, matchLimit, period = None):
         clubs = {match.homeName for match in matches}
         table = []
         for club in clubs:
@@ -188,9 +198,15 @@ class Analyzer():
                 if matchLimit != None and score.gamesPlayed >= matchLimit:
                     break
                 if match.homeName == club:
-                    score.addHomeGame(match)
+                    if period == None:
+                        score.addHomeGame(match)
+                    else:
+                        score.addHomePeriod(match, period)
                 else:
-                    score.addAwayGame(match)
+                    if period == None:
+                        score.addAwayGame(match)
+                    else:
+                        score.addAwayPeriod(match, period)
             table.append(score)
 
         return self.sortTable(table)
@@ -207,6 +223,16 @@ class Analyzer():
         position = 1
         for club in table:
             clubTable.append(club.format(position))
+            position += 1
+        print tabulate(clubTable, headers = header)
+
+    def printTableShort(self, table):
+        clubTable = []
+        header = ['position', 'name', 'games played', 'wins', 'draws', 'losses',
+                  'goals for', 'goals against', 'goal difference', 'points']
+        position = 1
+        for club in table:
+            clubTable.append(club.formatWithDraws(position))
             position += 1
         print tabulate(clubTable, headers = header)
 

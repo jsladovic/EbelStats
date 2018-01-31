@@ -6,19 +6,20 @@ class TeamScore():
         self.gamesPlayed = 0
         self.wins = 0
         self.losses = 0
+        self.draws = 0
         self.otWins = 0
         self.otLosses = 0
         self.goalsFor = 0
         self.goalsAgainst = 0
 
     def addHomeGame(self, match):
-        if match.homeScore == match.awayScore:
-            raise Exception('match must have a winner')
-
         self.gamesPlayed += 1
         self.goalsFor += match.homeScore
         self.goalsAgainst += match.awayScore
-        if match.homeScore > match.awayScore:
+        
+        if match.homeScore == match.awayScore:
+            self.draws += 1
+        elif match.homeScore > match.awayScore:
             if match.wentToOvertime():
                 self.otWins += 1
             else:
@@ -29,14 +30,28 @@ class TeamScore():
             else:
                 self.losses += 1
 
-    def addAwayGame(self, match):
-        if match.homeScore == match.awayScore:
-            raise Exception('match must have a winner')
+    def addHomePeriod(self, match, period):
+        self.gamesPlayed += 1
+        homeGoals = match.details.goalsByPeriod[period][0]
+        awayGoals = match.details.goalsByPeriod[period][1]
+        self.goalsFor += homeGoals
+        self.goalsAgainst += awayGoals
 
+        if homeGoals == awayGoals:
+            self.draws += 1
+        elif homeGoals > awayGoals:
+            self.wins += 1
+        else:
+            self.losses += 1
+
+    def addAwayGame(self, match):
         self.gamesPlayed += 1
         self.goalsFor += match.awayScore
         self.goalsAgainst += match.homeScore
-        if match.awayScore > match.homeScore:
+        
+        if match.homeScore == match.awayScore:
+            self.draws += 1
+        elif match.awayScore > match.homeScore:
             if match.wentToOvertime():
                 self.otWins += 1
             else:
@@ -47,15 +62,32 @@ class TeamScore():
             else:
                 self.losses += 1
 
-    def calculatePoints(self):
+    def addAwayPeriod(self, match, period):
+        self.gamesPlayed += 1
+        homeGoals = match.details.goalsByPeriod[period][0]
+        awayGoals = match.details.goalsByPeriod[period][1]
+        self.goalsFor += awayGoals
+        self.goalsAgainst += homeGoals
 
-        return self.wins * Match.win + self.otWins * Match.otWin + self.otLosses * Match.otLoss + self.losses * Match.loss
+        if homeGoals == awayGoals:
+            self.draws += 1
+        elif homeGoals < awayGoals:
+            self.wins += 1
+        else:
+            self.losses += 1
+
+    def calculatePoints(self):
+        return self.wins * Match.win + self.otWins * Match.otWin + self.otLosses * Match.otLoss + self.losses * Match.loss + self.draws * Match.draw
 
     def goalDifference(self):
         return self.goalsFor - self.goalsAgainst
 
     def format(self, position):
         return [position, self.name, self.gamesPlayed, self.wins, self.losses, self.otWins, self.otLosses,
+                self.goalsFor, self.goalsAgainst, self.goalDifference(), self.calculatePoints()]
+
+    def formatWithDraws(self, position):
+        return [position, self.name, self.gamesPlayed, self.wins, self.draws, self.losses, 
                 self.goalsFor, self.goalsAgainst, self.goalDifference(), self.calculatePoints()]
 
 class Streak:
